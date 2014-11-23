@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Creating ruby extensions with rust</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body {
+        font-family: sans-serif;
+        color: #333;
+      }
+
+      pre {
+        background-color: #2B303B;
+        color: #C0C5CE;
+        word-break: break-all;
+        padding: 3px;
+      }
+      h1, h2, h3 {
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Creating ruby extensions with rust
+
+---
+# FFI
+
+```ruby
+require 'ffi'
+
+module MyLib
+  extend FFI::Library
+  ffi_lib 'c'
+  attach_function :puts, [ :string ], :int
+end
+
+MyLib.puts 'Hello, World using libc!'
+```
+
+---
+# FFI pros and cons
+* ## we can include any system library
+* ## don't need to compile extension
+* ## work only with primitive C types
+
+---
+# Native extension
+* ### can be written (*only?*) in C
+* ### needs to be compiled
+* ### can work with ruby types
+* ### define ruby objects directly from C code
+
+---
+# MRI sources
+Doc: https://github.com/ruby/ruby/blob/trunk/README.EXT
+
+https://github.com/ruby/ruby/blob/trunk/hash.c
+```c
+VALUE rb_hash_has_key(VALUE hash, VALUE key)
+{
+    if (!RHASH(hash)->ntbl)
+        return Qfalse;
+    if (st_lookup(RHASH(hash)->ntbl, key, 0)) {
+  return Qtrue;
+    }
+    return Qfalse;
+}
+
+void Init_Hash(void) {
+    // ...
+    rb_define_method(rb_cHash,"include?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash,"member?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash,"has_key?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash,"key?", rb_hash_has_key, 1);
+    // ...
+}
+```
+
+---
+# C native extension
+```c
+#include "ruby.h"
+
+VALUE rb_module;
+
+VALUE test_method() {
+  printf("BOOO!!!\n");
+
+  return Qnil;
+};
+
+void Init_c_module() {
+  rb_module = rb_define_module("CModule");
+  rb_define_singleton_method(rb_module, "test_method", test_method, 0);
+}
+```
+
+```ruby
+require './c_module'
+
+CModule.test_method # => prints "BOOO!!!"
+```
+---
+
+# libruby.so
+```
+~  ᐅ nm -D ~/.rvm/rubies/ruby-2.1.3/lib/libruby.so | grep rb_ary
+
+0000000000038ce0 T rb_ary_aref
+0000000000036850 T rb_ary_assoc
+00000000000375a0 T rb_ary_cat
+0000000000036150 T rb_ary_clear
+0000000000036920 T rb_ary_cmp
+00000000000399f0 T rb_ary_concat
+0000000000036da0 T rb_ary_delete
+000000000003bdd0 T rb_ary_delete_at
+000000000003a100 T rb_ary_dup
+000000000002dfc0 T rb_ary_each
+000000000002f8d0 T rb_ary_entry
+0000000000033830 T rb_ary_free
+0000000000031650 T rb_ary_freeze
+000000000002e740 T rb_ary_includes
+000000000003b110 T rb_ary_join
+00000000000367d0 T rb_ary_memsize
+0000000000034170 T rb_ary_modify
+0000000000032c40 T rb_ary_new
+00000000000316f0 T rb_ary_new_capa
+0000000000032c50 T rb_ary_new_from_args
+00000000000336e0 T rb_ary_new_from_values
+...
+```
+
+---
+
+# Rust native extension #1
+```ruby
+require './librust_module'
+
+RustModule.test_method
+```
+
+```rust
+#![crate_type = "dylib"]
+```
+
+```
+ ᐅ rustc rust_module.rs
+ ᐅ ruby test.rb
+
+/.../lib/ruby/2.1.0/rubygems/core_ext/kernel_require.rb:55:in
+`require': /.../librust_module.so:
+undefined symbol: Init_librust_module - /.../librust_module.so (LoadError)
+  from /.../kernel_require.rb:55:in `require'
+  from test.rb:1:in `<main>'
+```
+---
+# Rust native extension #2
+```rust
+#![crate_type = "dylib"]
+
+#[no_mangle]
+pub extern fn Init_librust_module() {
+}
+```
+```
+ᐅ ruby test.rb
+test.rb:3:in `<main>': uninitialized constant RustModule (NameError)
+```
+---
+# Rust native extension #3
+```rust
+#![crate_type = "dylib"]
+
+extern crate libc;
+pub use libc::types::os::arch::c95::c_char;
+pub use libc::types::common::c95::c_void;
+
+#[link(name = "ruby")]
+extern {
+  // define ruby module
+  fn rb_define_module(name: *const libc::c_char) -> *mut libc::c_void;
+}
+
+#[no_mangle]
+pub extern fn Init_librust_module() {
+  let module = unsafe { rb_define_module("RustModule".to_c_str().as_ptr()) };
+}
+```
+```
+ᐅ rustc rust_module.rs -L ~/.rvm/rubies/default/lib
+ᐅ ruby test.rb
+test.rb:3:in <main>': undefined method `test_method'
+for RustModule:Module (NoMethodError)
+```
+---
+# Rust native extension #4
+```rust
+![crate_type = "dylib"]
+extern crate libc;
+pub use libc::types::os::arch::c95::c_char;
+pub use libc::types::common::c95::c_void;
+extern fn test_method(env: *mut libc::c_void) {
+  println!("BOOO!!!");
+}
+#[link(name = "ruby")]
+extern {
+  fn rb_define_module(name: *const libc::c_char) -> *mut libc::c_void;
+
+  fn rb_define_singleton_method(
+    klass: *mut libc::c_void,
+    name: *const libc::c_char,
+    callback: extern fn(*mut libc::c_void),
+    argc: libc::c_int
+  );
+}
+#[no_mangle]
+pub extern fn Init_librust_module() {
+  let module = unsafe { rb_define_module("RustModule".to_c_str().as_ptr()) };
+  unsafe { rb_define_singleton_method(module, "test_method".to_c_str().as_ptr(),
+   test_method, 0) };
+}
+```
+---
+# Rust native extension #4
+```
+ᐅ rustc rust_module.rs -L ~/.rvm/rubies/default/lib
+ᐅ ruby test.rb
+BOOO!!!
+```
+---
+# Rack app written in rust
+```rust
+#[no_mangle]
+pub extern fn Init_librack_app_rust() {
+  // create module RackAppRust
+  let module = unsafe { rb_define_module("RackAppRust".to_c_str().as_ptr()) };
+  // 'def self.call(env)' in module RackAppRust
+  unsafe { rb_define_singleton_method(module,
+  "call".to_c_str().as_ptr(), app_controller, 1) };
+}
+```
+### config.ru
+```ruby
+require './librack_app_rust'
+
+run RackAppRust
+```
+---
+# Rack app: controller
+```rust
+extern fn app_controller(env: *mut libc::c_void) -> *mut libc::c_void {
+  unsafe {
+    let response = rb_ary_new(); // []
+
+    let status = rb_int2big(200);
+
+    rb_ary_push(response, status); // [200]
+
+    let headers = rb_hash_new();
+
+    rb_ary_push(response, headers); // [200, {}]
+
+    let text = "<h1>RUST WEB APP</h1>";
+
+    let body = rb_str_new(text.to_c_str().as_ptr(), text.len().to_i64().unwrap());
+    let body_ary = rb_ary_new();
+    rb_ary_push(body_ary, body); // ["<h1>RUST WEB APP</h1>"]
+
+    rb_ary_push(response, body_ary); // [200, {}, ["<h1>RUST WEB APP</h1>"]]
+
+    return response;
+  }
+}
+```
+
+---
+# Rack app: extends
+```rust
+#[link(name = "ruby")]
+extern {
+  // define ruby module
+  fn rb_define_module(name: *const libc::c_char) -> *mut libc::c_void;
+  // define singleton method for object
+  fn rb_define_singleton_method(
+    klass: *mut libc::c_void,
+    name: *const libc::c_char,
+    callback: extern fn(*mut libc::c_void) -> *mut libc::c_void,
+    argc: libc::c_int
+  );
+  // create empty array
+  fn rb_ary_new() -> *mut libc::c_void;
+  // push value to array
+  fn rb_ary_push(ary: *mut libc::c_void, value: *mut libc::c_void);
+  // create empty hash
+  fn rb_hash_new() -> *mut libc::c_void;
+  // create string
+  fn rb_str_new(
+    text: *const libc::c_char,
+    length: libc::c_long
+  ) -> *mut libc::c_void;
+  // convert simple int to Fixnum
+  fn rb_int2big(value: int) -> *mut libc::c_void;
+}
+```
+---
+# Speed
+```ruby
+
+require './librack_app_rust'
+
+module RubyRack
+  def self.call(env)
+    [200, {}, ["Hello world!"]]
+  end
+end
+
+1_000_000.times { RackAppRust.call({a: 5}) } # => 1.24
+
+1_000_000.times { RubyRack.call({a: 5}) } # => 1
+```
+---
+# Rust code
+```rust
+extern fn app_controller(env: *mut libc::c_void) -> *mut libc::c_void {
+  unsafe {
+    let response = rb_ary_new(); // []
+
+    let status = rb_int2big(200);
+
+    rb_ary_push(response, status); // [200]
+
+    let headers = rb_hash_new();
+
+    rb_ary_push(response, headers); // [200, {}]
+
+    let text = "<h1>RUST WEB APP</h1>";
+
+    let body = rb_str_new(text.to_c_str().as_ptr(), text.len().to_i64().unwrap());
+    let body_ary = rb_ary_new();
+    rb_ary_push(body_ary, body); // ["<h1>RUST WEB APP</h1>"]
+
+    rb_ary_push(response, body_ary); // [200, {}, ["<h1>RUST WEB APP</h1>"]]
+
+    return response;
+  }
+}
+```
+---
+# Ruby code
+```ruby
+module RackAppRust
+  def self.call(env)
+    response = []
+    status   = 200
+    response.push(200)
+
+    headers = {}
+    response.push(headers)
+
+    body     = "<h1>RUST WEB APP</h1>"
+    body_ary = []
+    body_ary.push(body)
+
+    reponse.push(body_ary)
+
+    response
+  end
+end
+```
+---
+class: center, middle
+# That's all
+Examples: https://github.com/ololyay/rubymeditation_5
+
+    </textarea>
+    <script src="/js/remark.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
