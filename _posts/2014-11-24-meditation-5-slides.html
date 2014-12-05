@@ -44,6 +44,8 @@ end
 
 MyLib.puts 'Hello, World using libc!'
 ```
+???
+Foreign Function Interface
 
 ---
 # FFI pros and cons
@@ -108,11 +110,13 @@ require './c_module'
 
 CModule.test_method # => prints "BOOO!!!"
 ```
+???
+VALUE -> c_uintptr_t -> void*
 ---
 
 # libruby.so
 ```
-~  ᐅ nm -D ~/.rvm/rubies/ruby-2.1.3/lib/libruby.so | grep rb_ary
+~  ᐅ nm -D ~/.rvm/rubies/default/lib/libruby.so | grep rb_ary
 
 0000000000038ce0 T rb_ary_aref
 0000000000036850 T rb_ary_assoc
@@ -137,7 +141,8 @@ CModule.test_method # => prints "BOOO!!!"
 00000000000336e0 T rb_ary_new_from_values
 ...
 ```
-
+???
+nm - инфа о бинарных файлах
 ---
 
 # Rust native extension #1
@@ -174,6 +179,8 @@ pub extern fn Init_librust_module() {
 ᐅ ruby test.rb
 test.rb:3:in `<main>': uninitialized constant RustModule (NameError)
 ```
+???
+no_mangle - не коверкать название функции для внешнего вызова
 ---
 # Rust native extension #3
 ```rust
@@ -181,12 +188,12 @@ test.rb:3:in `<main>': uninitialized constant RustModule (NameError)
 
 extern crate libc;
 pub use libc::types::os::arch::c95::c_char;
-pub use libc::types::common::c95::c_void;
+pub use libc::types::os::arch::c99::uintptr_t;
 
 #[link(name = "ruby")]
 extern {
   // define ruby module
-  fn rb_define_module(name: *const libc::c_char) -> *mut libc::c_void;
+  fn rb_define_module(name: *const libc::c_char) -> libc::uintptr_t;
 }
 
 #[no_mangle]
@@ -203,21 +210,21 @@ for RustModule:Module (NoMethodError)
 ---
 # Rust native extension #4
 ```rust
-![crate_type = "dylib"]
+#![crate_type = "dylib"]
 extern crate libc;
 pub use libc::types::os::arch::c95::c_char;
-pub use libc::types::common::c95::c_void;
-extern fn test_method(env: *mut libc::c_void) {
+pub use libc::types::os::arch::c99::uintptr_t;
+extern fn test_method(env: libc::uintptr_t) {
   println!("BOOO!!!");
 }
 #[link(name = "ruby")]
 extern {
-  fn rb_define_module(name: *const libc::c_char) -> *mut libc::c_void;
+  fn rb_define_module(name: *const libc::c_char) -> libc::uintptr_t;
 
   fn rb_define_singleton_method(
-    klass: *mut libc::c_void,
+    klass: libc::uintptr_t,
     name: *const libc::c_char,
-    callback: extern fn(*mut libc::c_void),
+    callback: extern fn(libc::uintptr_t),
     argc: libc::c_int
   );
 }
@@ -256,7 +263,7 @@ run RackAppRust
 ---
 # Rack app: controller
 ```rust
-extern fn app_controller(env: *mut libc::c_void) -> *mut libc::c_void {
+extern fn app_controller(env: libc::uintptr_t) -> libc::uintptr_t {
   unsafe {
     let response = rb_ary_new(); // []
 
@@ -287,34 +294,34 @@ extern fn app_controller(env: *mut libc::c_void) -> *mut libc::c_void {
 #[link(name = "ruby")]
 extern {
   // define ruby module
-  fn rb_define_module(name: *const libc::c_char) -> *mut libc::c_void;
+  fn rb_define_module(name: *const libc::c_char) -> libc::uintptr_t;
   // define singleton method for object
   fn rb_define_singleton_method(
-    klass: *mut libc::c_void,
+    klass: libc::uintptr_t,
     name: *const libc::c_char,
-    callback: extern fn(*mut libc::c_void) -> *mut libc::c_void,
+    callback: extern fn(libc::uintptr_t) -> libc::uintptr_t,
     argc: libc::c_int
   );
   // create empty array
-  fn rb_ary_new() -> *mut libc::c_void;
+  fn rb_ary_new() -> libc::uintptr_t;
   // push value to array
-  fn rb_ary_push(ary: *mut libc::c_void, value: *mut libc::c_void);
+  fn rb_ary_push(ary: libc::uintptr_t, value: libc::uintptr_t);
   // create empty hash
-  fn rb_hash_new() -> *mut libc::c_void;
+  fn rb_hash_new() -> libc::uintptr_t;
   // create string
   fn rb_str_new(
     text: *const libc::c_char,
     length: libc::c_long
-  ) -> *mut libc::c_void;
+  ) -> libc::uintptr_t;
   // convert simple int to Fixnum
-  fn rb_int2big(value: int) -> *mut libc::c_void;
+  fn rb_int2big(value: int) -> libc::uintptr_t;
 }
 ```
 ---
-# Speed
+# Performance
 ```ruby
-
 require './librack_app_rust'
+require 'benchmark'
 
 module RubyRack
   def self.call(env)
@@ -322,14 +329,24 @@ module RubyRack
   end
 end
 
-1_000_000.times { RackAppRust.call({a: 5}) } # => 1.24
+Benchmark.bmbm do |x|
+  x.report("rust") do
+    1_000_000.times { RackAppRust.call({a: 5}) }
+  end
 
-1_000_000.times { RubyRack.call({a: 5}) } # => 1
+  x.report("ruby") do
+    1_000_000.times { RubyRack.call({a: 5}) }
+  end
+end
+
+#         real
+# rust   (1.028680)
+# ruby   (0.820052)
 ```
 ---
 # Rust code
 ```rust
-extern fn app_controller(env: *mut libc::c_void) -> *mut libc::c_void {
+extern fn app_controller(env: libc::uintptr_t) -> libc::uintptr_t {
   unsafe {
     let response = rb_ary_new(); // []
 
@@ -374,6 +391,71 @@ module RackAppRust
     response
   end
 end
+```
+---
+# Fibonacci
+```ruby
+module RubyImplementation
+  def self.fib(n)
+    if n <= 1
+      n
+    else
+      fib(n - 1) + fib(n - 2)
+    end
+  end
+end
+```
+```rust
+fn fib(number: uint) -> uint {
+  if number <= 1 {
+    return number;
+  } else {
+    return fib(number - 1) + fib(number - 2);
+  }
+}
+
+* extern fn process(context: libc::uintptr_t,
+*                     input: libc::uintptr_t) -> libc::uintptr_t {
+  unsafe {
+    let number = rb_num2long(input);
+    return rb_int2big(fib(number));
+  }
+}
+```
+---
+# Fibonacci
+```rust
+#[link(name = "ruby")]
+extern {
+  fn rb_define_module(name: *const libc::c_char) -> libc::uintptr_t;
+
+  fn rb_num2long(input: libc::uintptr_t) -> uint;
+
+  fn rb_define_singleton_method(
+    klass: libc::uintptr_t,
+    name: *const libc::c_char,
+    callback: extern fn(libc::uintptr_t, libc::uintptr_t) -> libc::uintptr_t,
+    argc: libc::c_int
+  );
+
+  fn rb_int2big(value: uint) -> libc::uintptr_t;
+}
+
+#[no_mangle]
+pub extern fn Init_librust_fib() {
+  unsafe {
+    let module = rb_define_module("RustImplementation".to_c_str().as_ptr());
+*   rb_define_singleton_method(module, "fib".to_c_str().as_ptr(), process, 1);
+  }
+}
+```
+---
+# Performance
+```
+           user     system      total        real
+rust   0.190000   0.000000   0.190000 (  0.181835)
+ruby   2.640000   0.000000   2.640000 (  2.650995)
+
 ```
 ---
 class: center, middle
