@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Floating point precision in ruby
+title: Floating point numbers precision in ruby
 ---
 Let's look at a scientific notation:
 
@@ -29,21 +29,22 @@ Ruby example:
 10000000000.0 + 0.00001 # => 10000000000.00001
 {% endhighlight %}
 
-Class Float represents real numbers in ruby using http://en.wikipedia.org/wiki/Double-precision_floating-point_format
+Class Float represents real numbers in ruby using [double-precision floating point representation](http://en.wikipedia.org/wiki/Double-precision_floating-point_format).
+
 Therefore, with increase of number the distance from one to another representable value (epsilon) will increase.
 
-Starting with the ruby 2.2 Float has method next_float which return next representable floating point number.
+Starting with the ruby 2.2 Float has method [next_float](http://ruby-doc.org/core-2.2.2/Float.html#method-i-next_float) [(source)](https://github.com/ruby/ruby/blob/59b089bd0902ee5de3b8fdb846fe9ece1c49b494/numeric.c#L1608) which return next representable floating point number.
 {% highlight ruby %}
 100000000.0.next_float # => 100000000.00000001
 {% endhighlight %}
 
-So, lets calculate epsilon:
+So, let's calculate epsilon:
 {% highlight ruby %}
 n = 1000000000.0
 n.next_float - n # => 1.1920928955078125e-07
 {% endhighlight %}
 
-Because of computers use binary system, preision will decrease each time when value becomes greater of the next power of two.
+Because of computers use the binary system, precision will decrease each time when the value becomes greater of the next power of two.
 
 Calculating the value of epsilon for numbers from 2^0 to 2^1023:
 {% highlight ruby %}
