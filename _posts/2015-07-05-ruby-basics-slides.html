@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ruby basics</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body {
+        font-family: sans-serif;
+        color: #333;
+      }
+
+      pre {
+        background-color: #2B303B;
+        color: #C0C5CE;
+        word-break: break-all;
+        padding: 3px;
+      }
+      h1, h2, h3 {
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Ruby basics
+
+---
+
+# How to run
+
+hi.rb
+```ruby
+  puts 'Hello!'
+```
+
+```
+  ruby hi.rb
+  Hello!
+```
+irb
+
+```
+~  ᐅ irb
+irb(main):001:0> puts 'Hello!'
+Hello!
+=> nil
+irb(main):002:0>
+```
+---
+# Variables
+```ruby
+# local
+a = 5
+a #=> 5
+
+# inctance
+@a #=> nil
+@a = 5
+@a #=> 5
+
+# global
+$a #=> nil
+$a = 5
+$a #=> 5
+
+# constant
+A = 'constant'
+
+A #=> "constant"
+A = 'another'
+(irb):98: warning: already initialized constant A
+(irb):96: warning: previous definition of A was here
+
+A #=> "another"
+```
+---
+
+# Everything is an object
+
+
+```ruby
+
+false.class #=> FalseClass
+
+5.class #=> Fixnum
+
+5.to_s #=> "5"
+
+[4,5,3,2,2].reverse #=> [2, 2, 3, 5, 4]
+```
+
+---
+
+# Numbers
+
+```ruby
+100.class #=> Fixnum
+
+10000000000000000000.class #=> Bignum
+ 
+100.0.class #=> Float
+```
+##Conversion
+
+```ruby
+1 + 1      #=> 2
+1 + 1.0    #=> 2.0
+5.to_f     #=> 5.0
+(1 + 1).to_f #=> 2.0
+```
+
+---
+#Arithmetic operators
+
+```ruby
+1 + 1  #=> 2
+
+5 - 1  #=> 4
+
+3 * 4  #=> 12
+
+12 / 3 #=> 4
+
+11 % 2 #=> 1
+
+2**10  #=> 1024
+```
+---
+#Assignment operators
+
+```ruby
+a = 5   #=> 5
+
+a += 1  #=> 6
+
+a -=1   #=> 5
+
+a *= 2  #=> 10
+
+a /= 2  #=> 5
+
+a %= 3  #=> 2
+
+a **= 2 #=> 4
+```
+---
+#String
+```ruby
+a = "Hello!" # => "Hello!"
+puts a # Hello!
+#=> nil
+String.new # => ""
+```
+##Interpolation
+```ruby
+'A is:' + a.to_s #=> "A is:5"
+"A is: #{ a }"   #=> "A is: 5"
+'A is: #{ a }'   #=> "A is: \#{ a }"
+```
+---
+#String methods
+http://ruby-doc.org/core-2.2.0/String.html
+```ruby
+'aaa' + 'bbb' #=> 'aaabbb'
+
+'abc'[1]      #=> 'b'
+
+'abc'[1,2]    #=> 'bc'
+
+'ruby'['u']   #=> "u"
+
+'ruby'['c']   #=> nil
+
+'Ruby'.downcase   #=> 'ruby'
+
+'ruby'.capitalize #=> 'Ruby'
+
+'ruby'.reverse    #=> 'ybur'
+
+```
+---
+#Array
+```ruby
+a = [1,2,3] #=> [1, 2, 3]
+a.reverse   #=> [3, 2, 1]
+a.sort      #=> [1, 2, 3]
+
+a[1] #=> 2
+a[1] = 'b'
+a #=> [1, "b", 3]
+
+a.take(2)       #=> [1, "b"]
+a.length        #=> 3
+a.empty?        #=> false
+a.include?("b") #=> true
+
+%w(a b c d #{5}) #=> ["a", "b", "c", "d", "\#{5}"]
+%W(a b c d #{5}) #=> ["a", "b", "c", "d", "5"]
+```
+---
+#Array operations
+```ruby
+a = [1,2,3] #=> [1, 2, 3]
+b = [3,4,5] #=> [3, 4, 5]
+
+a | b #=> [1, 2, 3, 4, 5]
+
+a & b #=> [3]
+
+a - b #=> [1, 2]
+
+a + b #=> [1, 2, 3, 3, 4, 5]
+
+a * 2 #=> [1, 2, 3, 1, 2, 3]
+
+```
+---
+#Symbol
+```ruby
+:buyer    #=> :buyer
+
+:'seller' #=> :seller
+
+:buyer.object_id  #=> 536008
+:buyer.object_id  #=> 536008
+
+'buyer'.object_id #=> 70133611717900
+'buyer'.object_id #=> 70133611669380
+```
+---
+#Hash
+```ruby
+a = { 'мама' => 'mother', 'папа' => 'father' }
+a['мама'] #=> "mother"
+
+a = { key1: 'value1', key2: 'value2' }
+
+a[:key1] #=> "value1"
+a.fetch(:key3) #=> KeyError: key not found: :key3
+
+a.keys #=> [:key1, :key2]
+
+a.values #=> ["value1", "value2"]
+
+a = Hash.new('default value') #=> {}
+
+a['blabla'] #=> "default value"
+```
+---
+#Range
+```ruby
+1..5 #=> 1..5
+
+a = %w(1 2 3 4 5 6 7 8 9 0) 
+#=> ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+
+a[1..4] #=> ["2", "3", "4", "5"]
+
+"Ruby basics"[0..3] #=> "Ruby"
+
+(1..10).to_a    #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+('a'..'g').to_a #=> ["a", "b", "c", "d", "e", "f", "g"]
+```
+---
+#Time
+```ruby
+a = Time.new #=> 2015-07-05 12:07:05 +0300
+
+a.year #=> 2015
+
+a.month #=> 7
+
+a.sec #=> 5
+
+a.strftime('%Y-%m-%d %H:%M:%S') #=> "2015-07-05 12:07:05"
+```
+---
+# if
+```ruby
+if a == 4
+  a = 7
+end
+
+if a == 4 then a = 7 end
+
+a = 7 if a == 4
+
+if a != 4
+  a = 7
+end
+
+unless a == 4
+  a = 7
+end
+
+a = 7 unless a == 4
+```
+---
+# if else
+```ruby
+a = 1
+ 
+res = if a < 5
+        "#{a} less than 5"
+      elsif a > 5
+        "#{a} greater than 5"
+      else
+        "#{a} equals 5"
+      end
+ 
+res #=> "1 less than 5"
+```
+
+```ruby
+true ? 't' : 'f'  #=> "t"
+false ? 't' : 'f' #=> "f"
+```
+---
+# or, and
+```ruby
+nil && 99   #=> nil
+ 
+false && 99 #=> false
+ 
+"cat" && 99 #=> 99
+
+
+
+nil || 99   #=> 99
+ 
+false || 99 #=> 99
+ 
+"cat" || 99 #=> "cat"
+```
+---
+
+class: center, middle
+<h1 style="font-size: 10rem;">||=</h1>
+---
+# ||=
+```ruby
+@a #=> nil
+
+@a ||= 5
+
+@a #=> 5
+
+@a ||= 6
+
+@a #=> 5
+```
+---
+# case
+```ruby
+a = 1
+
+r = case
+      when a < 5
+        "#{a} less than 5"
+      when a > 5
+        "#{a} greater than 5"
+      else
+        "#{a} equals 5"
+    end
+
+r #=> "1 less than 5"
+```
+---
+# loop
+```ruby
+i = 0
+
+loop do
+  i += 1
+  next if i == 5
+  print "#{i} "
+  break if i == 10
+end
+#=> 1 2 3 4 6 7 8 9 10
+```
+---
+# while, for
+```ruby
+i = 1
+
+while i < 11
+  print "#{i} "
+  i += 1
+end
+#=> 1 2 3 4 6 7 8 9 10
+
+for i in 1..10
+  print "#{i} "
+end
+#=> 1 2 3 4 6 7 8 9 10
+```
+---
+# Iterators
+```ruby
+a = (1..10)
+
+a.each { |element| puts element }
+
+a.map { |x| x * 2 } 
+#=> [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+
+a.map(&:to_s) 
+#=> ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+
+10.times { |i| puts i }
+```
+---
+# Methods
+```ruby
+def this_is_one
+  'one'
+end
+
+this_is_one #=> 'one'
+
+def with_arg(arg)
+  puts arg
+end
+
+with_arg(2)
+
+def with_return
+  return 'one'
+  'two'
+end
+
+with_return #=> 'one'
+```
+---
+# Methods args
+```ruby
+def many_args(arg1, *rest)
+  "arg1=#{arg1}  rest=#{rest.inspect}"
+end
+
+many_args(1,2,3,4,5) #=> "arg1=1  rest=[2, 3, 4, 5]"
+
+def split_apart(first, *split, last)
+  "first: #{first.inspect}, split: #{split.inspect}, last: #{last.inspect}"
+end
+
+split_apart(1, 2) #=> "first: 1, split: [], last: 2"
+ 
+split_apart(1, 2, 3) #=> "first: 1, split: [2], last: 3"
+ 
+split_apart(1, 2, 3, 4) #=> "first: 1, split: [2, 3], last: 4"
+```
+---
+# Methods and blocks
+```ruby
+(1..10).map { |x| x * 2 }
+
+def with_doubled(a)
+  yield(a*2)
+end
+
+with_doubled(2) { |val| puts val } #=> 4
+
+def try
+  if block_given?
+    yield
+  else
+    "no block"
+  end
+end
+ 
+try #=> "no block"
+ 
+try { "hello" } #=> "hello"
+ 
+try do "hello" end #=> "hello"
+```
+---
+# Proc and lambda
+```ruby
+# proc
+square = Proc.new do |n|
+  n ** 2
+end
+ 
+square.call(2) #=> 4
+
+
+# lambda
+bo = lambda { |param| "You called me with #{param}" }
+bo.call(99) #=> "You called me with 99"
+
+# difference
+def proc_return
+  Proc.new { return "Proc.new" }.call
+  return "proc_return return"
+end
+ 
+def lambda_return
+  lambda { return "lambda" }.call
+  return "lambda_return return"
+end
+ 
+proc_return #=> "Proc.new"
+ 
+lambda_return #=> "lambda_return return"
+```
+
+    </textarea>
+    <script src="/js/remark.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
