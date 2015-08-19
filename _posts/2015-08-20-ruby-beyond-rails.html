@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ruby beyond Rails</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(http://fonts.googleapis.com/css?family=Roboto);
+
+      body {
+        font-family: 'Roboto';
+        color: #333;
+      }
+
+      img {
+        width: 60%;
+      }
+
+      pre {
+        background-color: #2B303B;
+        color: #C0C5CE;
+        word-break: break-all;
+        padding: 3px;
+      }
+      h1, h2, h3 {
+        font-weight: normal;
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# RUBY BEYOND RAILS
+---
+
+# Rack
+```ruby
+require 'rack'
+require 'json'
+
+class ApiApp
+  def initialize
+    @views = {}
+  end
+
+  def call(env)
+    req = Rack::Request.new(env)
+    @views[req.path] ||= 0
+    @views[req.path] += 1
+    response
+  end
+
+  def response
+    [
+      200, 
+      {'Content-type' => 'application/json'},
+      [{ views: @views }.to_json]
+    ]
+  end
+end
+
+Rack::Handler::WEBrick.run(ApiApp.new)
+```
+---
+
+# Cuba
+[website](http://cuba.is/)
+```ruby
+require "cuba" 
+require "cuba/render" 
+require "erb"
+
+Cuba.plugin(Cuba::Render)
+Cuba.define do 
+  on get do 
+    on "about" do # /about
+      render("about") 
+    end
+
+    on "param/:text" do |text| # /param/sometext
+      res.write(text)
+    end
+
+    on "search", param("q") do |q| # /search?q=query
+      res.write(q)
+    end
+  end 
+end
+
+Rack::Handler::WEBrick.run(Cuba)
+```
+---
+
+# Sinatra
+[manual](http://www.sinatrarb.com/intro.html)
+```ruby
+# app.rb
+require 'sinatra'
+
+get '/about' do # GET /about
+  erb :about # views/about.erb
+end
+```
+
+```ruby
+# config.ru
+require './app'
+
+run Sinatra::Application
+```
+
+---
+
+# Sinatra
+
+```ruby
+get '/:one/:two' do
+  params[:one]
+end
+
+post '/' do
+  .. create something ..
+end
+
+put '/' do
+  .. replace something ..
+end
+
+patch '/' do
+  .. modify something ..
+end
+
+delete '/' do
+  .. annihilate something ..
+end
+```
+
+---
+
+# Sinatra
+
+```ruby
+helpers do
+  def text
+    'Hello world!'
+  end
+end
+```
+
+```ruby
+set :public_folder, File.dirname(__FILE__) + '/static'
+
+set :views, settings.root + '/templates'
+
+enable :sessions
+```
+---
+# Sinatra
+
+```ruby
+require 'sinatra/base'
+
+class PostsApp < Sinatra::Base
+  get '/posts' do
+    # get posts here
+  end
+end
+
+class BlogApp < Sinatra::Base
+  use PostsApp
+
+  get '/' do
+    # welcome page
+  end
+end
+```
+---
+
+# Padrino
+[website](http://www.padrinorb.com/)
+```
+padrino generate project test_app -t rspec -e haml -d activerecord -c sass
+```
+![output](/img/padrino_generator.png)
+---
+
+# Padrino
+```
+padrino g controller Admin get:index get:new post:create
+```
+![output](/img/padrino_controller_generator.png)
+
+```
+padrino g model User name:string age:integer email:string
+```
+![output](/img/padrino_model_generator.png)
+
+---
+
+# Padrino
+
+```ruby
+class CreateUsers < ActiveRecord::Migration
+  def self.up
+    create_table :users do |t|
+      t.string :name
+      t.integer :age
+      t.string :email
+      t.timestamps
+    end
+  end
+
+  def self.down
+    drop_table :users
+  end
+end
+```
+
+---
+# Grape
+
+[website](http://www.ruby-grape.org/)
+
+```ruby
+require 'grape'
+require 'json'
+
+class ApiApp < Grape::API
+  version 'v1', using: :path
+  format :json
+
+  resource :math do
+    desc "Multiply number by 2."
+    params do
+      requires :number, 
+        type: Integer,
+        desc: "Given number.",
+        documentation: { example: 5 }
+    end
+    get :double do # /v1/math/double?number=5
+      { result: 2 * params[:number] } # { "result": 10 }
+    end
+  end
+end
+```
+
+---
+
+# Volt
+[website](http://voltframework.com/)
+
+```
+$ gem install volt
+$ volt new some_app
+$ cd some_app
+$ bundle exec volt server
+Volt 0.9.4
+                             ,--,           ,----,
+                ,----..   ,---.'|         ,/   .`|
+               /   /   \  |   | :       ,`   .'  :
+       ,---.  /   .     : :   : |     ;    ;     /
+      /__./| .   /   ;.  \|   ' :   .'___,/    ,'
+ ,---.;  ; |.   ;   /  ` ;;   ; '   |    :     |
+/___/ \  | |;   |  ; \ ; |'   | |__ ;    |.';  ;
+\   ;  \ ' ||   :  | ; | '|   | :.'|`----'  |  |
+ \   \  \: |.   |  ' ' ' :'   :    ;    '   :  ;
+  ;   \  ' .'   ;  \; /  ||   |  ./     |   |  '
+   \   \   ' \   \  ',  / ;   : ;       '   :  |
+    \   `  ;  ;   :    /  |   ,/        ;   |.'
+     :   \ |   \   \ .'   '---'         '---'
+      '---"     `---`
+
+```
+
+---
+
+# Volt
+
+![tree](/img/volt_tree.png)
+
+---
+
+# Volt
+
+<img src="/img/live_update.gif" style="width: 70%">
+
+---
+
+# Volt
+#### Default index
+![welcome_page](/img/welcome_page.png)
+
+#### Model
+```ruby
+# some_app/app/main/models/visits.rb
+class Visit < Volt::User
+  field :time
+end
+```
+---
+# Volt
+```ruby
+module Main
+  class MainController < Volt::ModelController
+    model :store
+
+    def index
+      _visits << { time: Time.now.strftime('%H:%M:%S') }
+    end
+
+    def about
+    end
+
+    private
+
+    def main_path
+      "#{params._component || 'main'}/#{params._controller || 'main'}/#{params._action || 'index'}"
+    end
+
+    def active_tab?
+      url.path.split('/')[1] == attrs.href.split('/')[1]
+    end
+  end
+end
+```
+---
+# Volt
+```html
+<:Title>
+  Home
+{% raw  %}
+<:Body>
+  <h1>Welcomeeeee</h1>
+  <p>Visits count: {{_visits.count}}</p>
+  {{_visits.each do |visit| }}
+    <p>{{visit._time}}</p>
+  {{end}}
+{% endraw %}
+```
+---
+
+# Volt
+<img src="/img/websockets.gif" style="width: 100%">
+
+---
+
+# Opal
+[github](https://github.com/opal/opal)
+```ruby
+require 'opal'
+Opal.compile('puts("Hello world")')
+```
+```javascript
+(function(Opal) {
+  Opal.dynamic_require_severity = "error";
+  var self = Opal.top, $scope = Opal, nil = Opal.nil, $breaker = Opal.breaker, $slice = Opal.slice;
+
+  Opal.add_stubs(['$puts']);
+  return self.$puts("Hello world")
+})(Opal);
+```
+---
+
+# Lotus
+[website](http://lotusrb.org/)
+
+- Lotus :: Model
+- Lotus :: Router
+- Lotus :: Utils
+- Lotus :: View
+- Lotus :: Controller
+- Lotus :: Validations
+- Lotus :: Helpers
+
+---
+# Lotus
+```
+$ gem install lotusrb
+
+$ lotus new notes_app --database=postgres
+      create  notes_app/.lotusrc
+      create  notes_app/.env
+      create  notes_app/.env.development
+      create  notes_app/.env.test
+      create  notes_app/Gemfile
+      create  notes_app/config.ru
+      create  notes_app/config/environment.rb
+      create  notes_app/lib/notes_app.rb
+      create  notes_app/lib/config/mapping.rb
+      create  notes_app/Rakefile
+      create  notes_app/spec/spec_helper.rb
+      create  notes_app/spec/features_helper.rb
+      create  notes_app/db/schema.sql
+      .....
+
+```
+
+---
+# Lotus
+
+```
+$ bundle exec lotus server
+```
+<img src="/img/lotus_welcome.png" style="width: 100%">
+
+---
+# Lotus
+### Router
+
+```ruby
+# apps/web/config/routes.rb
+get '/proc',       to: ->(env) { [200, {}, ['Hello from Lotus!']] }
+get '/action',     to: "home#index"
+get '/middleware', to: Middleware
+get '/rack-app',   to: RackApp.new
+get '/rails',      to: ActionControllerSubclass.action(:new)
+
+resources :books, except: [:destroy]
+
+mount SinatraApp.new, at: '/sinatra'
+```
+---
+# Lotus
+### Action
+
+```ruby
+# apps/web/controllers/signup/create.rb
+module Web::Controllers::Signup
+  class Create
+    include Web::Action
+
+    params do
+      param :name,     presence: true
+      param :email,    presence: true, format: /@/, confirmation: true
+      param :password, presence: true, 
+        confirmation: true
+    end
+
+    def call(params)
+      if params.valid?
+        # ...
+      else
+        # ...
+      end
+    end
+  end
+end
+
+```
+---
+
+# Lotus
+### Views
+```ruby
+# apps/web/views/dashboard/index.rb
+module Web::Views::Dashboard
+  class Index
+    include Web::View
+
+    def title
+      'Dashboard'
+    end
+  end
+end
+```
+---
+# Lotus
+### Views
+```ruby
+# apps/web/controllers/dashboard/index.rb
+module Web::Controllers::Dashboard
+  class Index
+    include Web::Action
+    expose :greeting
+
+    def call(params)
+      @greeting = "Hello"
+      @foo      = 23
+    end
+  end
+end
+
+# apps/web/views/dashboard/index.rb
+module Web::Views::Dashboard
+  class Index
+    include Web::View
+
+    def welcome_message
+      greeting + " and welcome"
+    end
+  end
+end
+```
+---
+# Lotus
+### Migration
+```
+lotus generate migration create_books
+```
+```ruby
+Lotus::Model.migration do
+  change do
+    create_table :books do
+      primary_key :id
+      column :title,      String,   null: false
+      column :author,     String,   null: false
+    end
+  end
+end
+```
+---
+# Lotus
+### Models
+```
+$ lotus generate model book
+      create  lib/notes_app/entities/book.rb
+      create  lib/notes_app/repositories/book_repository.rb
+```
+```ruby
+# lib/bookshelf/entities/book.rb
+class Book
+  include Lotus::Entity
+  attributes :title, :author
+end
+
+# lib/bookshelf.rb
+mapping do
+  collection :books do
+    entity     Book
+    repository BookRepository
+
+    attribute :id,         Integer
+    attribute :title,      String
+    attribute :author,     String
+  end
+end
+```
+---
+# Lotus
+### Repository
+```ruby
+$ lotus console
+>> BookRepository.all
+=> []
+>> book = Book.new(title: 'TDD', author: 'Kent Beck')
+=> #<Book:0x007f9af1d4b028 @title="TDD", @author="Kent Beck">
+>> BookRepository.create(book)
+=> #<Book:0x007f9af1d13ec0 @title="TDD", @author="Kent Beck" @id=1>
+>> BookRepository.find(1)
+=> #<Book:0x007f9af1d13ec0 @title="TDD", @author="Kent Beck" @id=1>
+```
+    </textarea>
+    <script src="/js/remark.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        highlightStyle: 'monokai'
+      });
+    </script>
+  </body>
+</html>
