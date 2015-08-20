@@ -34,6 +34,12 @@
 class: center, middle
 
 # RUBY BEYOND RAILS
+
+???
+
+- рельса ок но большая
+- язык одного фреймворка это хорошо
+- при этом есть альтернативы для маленьких и больших приложений
 ---
 
 # Rack
@@ -64,6 +70,12 @@ end
 
 Rack::Handler::WEBrick.run(ApiApp.new)
 ```
+
+???
+
+- можно написать очень маленький апи
+- очень быстро все будет работать
+
 ---
 
 # Cuba
@@ -92,6 +104,12 @@ end
 
 Rack::Handler::WEBrick.run(Cuba)
 ```
+
+???
+
+- многие другие маленькие фреймворки повторяют этот DSL
+roda
+- фича с пермитом параметров
 ---
 
 # Sinatra
@@ -111,7 +129,9 @@ require './app'
 
 run Sinatra::Application
 ```
-
+???
+- очень простой фрейморк
+- второй по популярности
 ---
 
 # Sinatra
@@ -137,7 +157,9 @@ delete '/' do
   .. annihilate something ..
 end
 ```
-
+???
+- отличные матчеры реквестов
+- можно матчить даже по регулярному выражению
 ---
 
 # Sinatra
@@ -157,6 +179,12 @@ set :views, settings.root + '/templates'
 
 enable :sessions
 ```
+
+???
+
+- можно добавить хелперы для вьюх
+- гибко все настроить
+
 ---
 # Sinatra
 
@@ -177,23 +205,33 @@ class BlogApp < Sinatra::Base
   end
 end
 ```
+
+???
+пример модульного приложения
+
+use - это по сути добавление rack middleware
 ---
 
 # Padrino
 [website](http://www.padrinorb.com/)
-```
+```shell
 padrino generate project test_app -t rspec -e haml -d activerecord -c sass
 ```
 ![output](/img/padrino_generator.png)
+
+???
+если на синатре хочется сделать более менее большое приложение
+с миграциями и с другими плюшками то для этого существует
+padrino
 ---
 
 # Padrino
-```
+```shell
 padrino g controller Admin get:index get:new post:create
 ```
 ![output](/img/padrino_controller_generator.png)
 
-```
+```shell
 padrino g model User name:string age:integer email:string
 ```
 ![output](/img/padrino_model_generator.png)
@@ -246,13 +284,16 @@ class ApiApp < Grape::API
   end
 end
 ```
-
+???
+- самодокументированый апи
+- версионирование из коробки
+- валидация входных параметров
 ---
 
 # Volt
 [website](http://voltframework.com/)
 
-```
+```shell
 $ gem install volt
 $ volt new some_app
 $ cd some_app
@@ -274,7 +315,8 @@ Volt 0.9.4
       '---"     `---`
 
 ```
-
+???
+спросить про meteor
 ---
 
 # Volt
@@ -326,6 +368,7 @@ module Main
   end
 end
 ```
+
 ---
 # Volt
 ```html
@@ -333,7 +376,7 @@ end
   Home
 {% raw  %}
 <:Body>
-  <h1>Welcomeeeee</h1>
+  <h1>Welcome</h1>
   <p>Visits count: {{_visits.count}}</p>
   {{_visits.each do |visit| }}
     <p>{{visit._time}}</p>
@@ -377,7 +420,7 @@ Opal.compile('puts("Hello world")')
 
 ---
 # Lotus
-```
+```shell
 $ gem install lotusrb
 
 $ lotus new notes_app --database=postgres
@@ -401,7 +444,7 @@ $ lotus new notes_app --database=postgres
 ---
 # Lotus
 
-```
+```shell
 $ bundle exec lotus server
 ```
 <img src="/img/lotus_welcome.png" style="width: 100%">
@@ -450,6 +493,11 @@ module Web::Controllers::Signup
 end
 
 ```
+???
+
+тоже валидация входных параметров
+
+каждый action - rack приложение
 ---
 
 # Lotus
@@ -466,6 +514,9 @@ module Web::Views::Dashboard
   end
 end
 ```
+???
+подготовка данных к отображению
+это дает уменьшение количества логики в вьюхахы
 ---
 # Lotus
 ### Views
@@ -494,10 +545,12 @@ module Web::Views::Dashboard
   end
 end
 ```
+???
+expose - проброс переменной в темплейт
 ---
 # Lotus
 ### Migration
-```
+```shell
 lotus generate migration create_books
 ```
 ```ruby
@@ -511,6 +564,8 @@ Lotus::Model.migration do
   end
 end
 ```
+???
+обычные sequel миграции
 ---
 # Lotus
 ### Models
@@ -538,6 +593,8 @@ mapping do
   end
 end
 ```
+???
+пояснить за паттерн repository
 ---
 # Lotus
 ### Repository
@@ -552,12 +609,16 @@ $ lotus console
 >> BookRepository.find(1)
 => #<Book:0x007f9af1d13ec0 @title="TDD", @author="Kent Beck" @id=1>
 ```
+???
+в целом фреймворк классный и минималистичный и быстрый
+скорее всего это связано с его молодостью
+судьба рельсы неизбежна
     </textarea>
     <script src="/js/remark.min.js" type="text/javascript">
     </script>
     <script type="text/javascript">
       var slideshow = remark.create({
-        highlightStyle: 'monokai'
+        highlightStyle: 'tomorrow'
       });
     </script>
   </body>
